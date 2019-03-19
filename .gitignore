@@ -1,0 +1,6 @@
+venv
+settings.py
+.vscode
+__pycache__
+.coverage
+htmlcov
