@@ -1,10 +1,7 @@
 import calendar
 import datetime
 import sys
-import uuid
 from decimal import Decimal
-
-import requests
 
 if __name__ == "__main__":
     import settings
@@ -40,14 +37,14 @@ def do_save():
 def main():
     if config.USE == "STARLING":
         from banks.starling import StarlingBank
+
         my_bank = StarlingBank(config.STARLING)
     elif config.USE == "MONZO":
         from banks.monzo import MonzoBank
+
         my_bank = MonzoBank(config.MONZO)
     else:
-        print(
-            f"Set config.USE to either MONZO or STARLING."
-        )
+        print(f"Set config.USE to either MONZO or STARLING.")
         sys.exit(1)
 
     current_balance = my_bank.get_balance()

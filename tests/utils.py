@@ -1,14 +1,9 @@
-import re
-import tempfile
 from decimal import Decimal
 from unittest import TestCase, mock
 
 import requests_mock
 
 import main
-from banks.bank import Bank
-from banks.monzo import MonzoBank
-from banks.starling import StarlingBank
 
 
 class NetworkMockedTestCase(TestCase):
@@ -173,23 +168,6 @@ class IntegrationTestCaseMixin:
         self.assertEqual(0, sysexit.exception.code)
 
 
-class StarlingIntegrationTestCase(NetworkMockedTestCase, IntegrationTestCaseMixin):
-    def setUp(self):
-        super().setUp()
-        self.config.USE = "STARLING"
-
-
-@mock.patch(
-    "banks.oauthbank.OAuthBank.load_token",
-    return_value={"access_token": "yey", "expires_in": 3600},
-)
-@mock.patch("banks.oauthbank.OAuthBank.save_token")
-class MonzoIntegrationTestCase(NetworkMockedTestCase, IntegrationTestCaseMixin):
-    def setUp(self):
-        super().setUp()
-        self.config.USE = "MONZO"
-
-
 class BankAPITestCaseMixin:
     @mock.patch("banks.bank.uuid.uuid4", return_value=NetworkMockedTestCase.RAND_UUID)
     def test_str(self, *m):
@@ -216,55 +194,3 @@ class BankAPITestCaseMixin:
     def test_save_goal(self, *m):
         save_goal_data = self.bank.save_goal(amount=Decimal("1.00"))
         self.assertTrue(save_goal_data["success"])
-
-
-class StarlingAPITestCase(NetworkMockedTestCase, BankAPITestCaseMixin):
-    def setUp(self):
-        super().setUp()
-        self.bank = StarlingBank(self.config.STARLING)
-
-
-@mock.patch("banks.oauthbank.input", return_value="https://example.com?code=c&state=x")
-@mock.patch("banks.oauthbank.print")
-class MonzoAPITestCase(NetworkMockedTestCase, BankAPITestCaseMixin):
-    @mock.patch(
-        "banks.oauthbank.OAuthBank.load_token",
-        return_value={"access_token": "yey", "expires_in": 3600},
-    )
-    @mock.patch("banks.oauthbank.OAuthBank.save_token")
-    def setUp(self, *m):
-        super().setUp()
-        self.bank = MonzoBank(self.config.MONZO)
-
-    @mock.patch("banks.oauthbank.OAuthBank.save_token")
-    def test_no_saved_token(self, *m):
-        with mock.patch("banks.oauthbank.OAuthBank.load_token", return_value=None):
-            self.bank.get_authenticated_session()
-
-    def test_get_token_filepath(self, *m):
-        self.assertIsInstance(self.bank.get_token_filepath(), str)
-
-    @mock.patch(
-        "banks.oauthbank.OAuthBank.get_token_filepath", side_effect=FileNotFoundError()
-    )
-    @mock.patch("banks.oauthbank.print")
-    def test_no_file(self, *m):
-        with mock.patch("banks.oauthbank.OAuthBank.save_token", return_value=None):
-            self.bank.get_authenticated_session()
-
-    @mock.patch(
-        "banks.oauthbank.OAuthBank.get_token_filepath", return_value="test_data/token.json"
-    )
-    def test_existing_file(self, *m):
-        with mock.patch("banks.oauthbank.OAuthBank.save_token", return_value=None):
-            self.bank.get_authenticated_session()
-
-    def test_save_token(self, *m):
-        with tempfile.NamedTemporaryFile() as tf:
-            with mock.patch(
-                "banks.oauthbank.OAuthBank.get_token_filepath", return_value=tf.name
-            ), mock.patch(
-                "banks.oauthbank.OAuthBank.load_token",
-                return_value=None,
-            ):
-                self.bank.get_authenticated_session()

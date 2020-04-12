@@ -22,7 +22,6 @@ MONZO = {
     "CLIENT_SECRET": "s",
     "CLIENT_ID": "id",
     "REDIRECT_URI": "https://example.com",
-
 }
 
 USE = "STARLING"
